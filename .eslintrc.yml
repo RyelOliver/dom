@@ -1,0 +1,53 @@
+extends: 'eslint:recommended'
+env:
+    browser: true
+    node: true
+    jest: true
+parserOptions:
+    ecmaVersion: 2018
+rules:
+    no-debugger:
+        - off # For development use
+    no-console:
+        - off # For development use
+    indent:
+        - error
+        - 4
+        - SwitchCase: 1
+    linebreak-style:
+        - error
+        - unix
+    no-trailing-spaces:
+        - error
+    no-multiple-empty-lines:
+        - error
+        - max: 1
+    max-len:
+        - error
+        - code: 100
+    semi:
+        - error
+        - always
+    quotes:
+        - error
+        - single
+    comma-dangle:
+        - error
+        - always-multiline
+    key-spacing:
+        - error
+        - mode: strict
+    keyword-spacing:
+        - error
+    space-before-blocks:
+        - error
+        - always
+    space-before-function-paren:
+        - error
+        - never
+    object-curly-spacing:
+        - error
+        - always
+    array-bracket-spacing:
+        - error
+        - always
