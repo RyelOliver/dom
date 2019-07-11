@@ -38,6 +38,36 @@ function parsePath(path) {
         });
 }
 
+function getNodesByPath(node, path) {
+    const selectors = parsePath(path);
+    let nodes = [ node ];
+    while (selectors.length) {
+        const { nodeName, isDirectChild, index } = selectors.shift();
+        const childNodes = [];
+        nodes.forEach(node => {
+            if (isDirectChild) {
+                childNodes.push(...Array.from(node.childNodes).filter(node => node.tagName === nodeName));
+            } else {
+                childNodes.push(...Array.from(node.getElementsByTagName(nodeName)));
+            }
+        });
+        if (index === undefined) {
+            nodes = childNodes;
+        } else {
+            const node = childNodes[index];
+            nodes = node ? [ node ] : [];
+        }
+    }
+    return nodes;
+}
+
+function getNodeByPath(node, path) {
+    const nodes = getNodesByPath(node, path);
+    return nodes.length > 0 ? nodes[0] : undefined;
+}
+
 module.exports = {
     parsePath,
+    getNodesByPath,
+    getNodeByPath,
 };

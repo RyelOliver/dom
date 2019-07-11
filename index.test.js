@@ -1,4 +1,19 @@
-const { parsePath } = require('./index');
+const { parsePath, getNodesByPath, getNodeByPath } = require('./index');
+
+function clearDocument() {
+    const newBody = document.body.cloneNode(false);
+    return document.body.parentNode.replaceChild(newBody, document.body);
+}
+function appendToDocument(node) {
+    return document.body.appendChild(node);
+}
+
+function p() {
+    return document.createElement('p');
+}
+function div() {
+    return document.createElement('div');
+}
 
 describe('Path parser', () => {
     it('Should parse a single node name selector', () => {
@@ -53,5 +68,36 @@ describe('Path parser', () => {
     it('Should error parsing an index selector without a preceding node name or without an integer', () => {
         expect(() => parsePath('(40)')).toThrowError('\'(n)\' selectors require a preceding node name');
         expect(() => parsePath('w:t(n)')).toThrowError('\'(n)\' selectors require a preceding node name');
+    });
+});
+
+describe('Get nodes from path', () => {
+    beforeEach(() => clearDocument());
+
+    it('Should get all child nodes matching the node name', () => {
+        appendToDocument(p());
+        appendToDocument(div());
+        appendToDocument(p());
+
+        const expected = [
+            p(),
+            p(),
+        ];
+        const actual = getNodesByPath(document, 'p');
+        expect(actual).toStrictEqual(expected);
+    });
+});
+
+describe('Get node from path', () => {
+    beforeEach(() => clearDocument());
+
+    it('Should get the first child node matching the node name', () => {
+        appendToDocument(p());
+        appendToDocument(div());
+        appendToDocument(p());
+
+        const expected = p();
+        const actual = getNodeByPath(document, 'p');
+        expect(actual).toStrictEqual(expected);
     });
 });
