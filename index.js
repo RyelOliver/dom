@@ -6,6 +6,12 @@ function parsePath(path) {
         .replace(/#\s+/g, '#')
         // Add leading space to '>' and '#'
         .replace(/(\S)([>#]{1,2})/g, (match, nonWhiteSpaceCharacter, childOrIdSelector) => `${nonWhiteSpaceCharacter} ${childOrIdSelector}`)
+        // Remove leading space from '['
+        .replace(/\s+\]/g, ']')
+        // Remove trailing space from '['
+        .replace(/\[\s+/g, '[')
+        // Remove leading and trailing space from '='
+        .replace(/\s*=\s*/g, '=')
         // Remove leading and spaces within '(n)'
         .replace(/\s*\(\s*(\S*)\s*\)/g, (match, nonWhiteSpaceCharacter) => `(${nonWhiteSpaceCharacter})`)
         // Add trailing space to '(n)'
@@ -18,6 +24,8 @@ function parsePath(path) {
             let isDirectChild = false;
             let index;
             let isId = false;
+            let attributeName;
+            let attributeValue;
 
             if (nodeName.indexOf('>') === 0) {
                 nodeName = nodeName.substring(1);
@@ -35,7 +43,21 @@ function parsePath(path) {
                     throw Error('\'#\' selectors require a following id');
             }
 
-            if (/(\(.+\))/.test(nodeName)) {
+            if (/\[.*\]/.test(nodeName)) {
+                const match = nodeName.match(/(\S*)\[(.*)\]/);
+
+                nodeName = match[1] || undefined;
+                attributeName = match[2].trim();
+
+                if (/="(.*)"/.test(attributeName)) {
+                    const match = attributeName.match(/(\S+)="(.+)"/);
+
+                    attributeName = match[1];
+                    attributeValue = match[2];
+                }
+            }
+
+            if (/\(.+\)/.test(nodeName)) {
                 const match = nodeName.match(/(\S+)\((\d+)\)/);
 
                 if (!match)
@@ -45,15 +67,17 @@ function parsePath(path) {
                 index = parseInt(match[2]);
             }
 
-            return { nodeName, isDirectChild, index, isId };
+            return { nodeName, isDirectChild, index, isId, attributeName, attributeValue };
         });
 }
 
 function getNodesByPath(node, path) {
     const selectors = parsePath(path);
+
     let nodes = [ node ];
     while (selectors.length) {
-        const { nodeName, isDirectChild, index, isId } = selectors.shift();
+        const { nodeName, isDirectChild, index, isId, attributeName, attributeValue } = selectors.shift();
+
         if (isId) {
             let childNode;
             while (!childNode && nodes.length > 0) {
@@ -61,23 +85,35 @@ function getNodesByPath(node, path) {
                 childNode = node.getElementById(nodeName);
             }
             nodes = childNode ? [ childNode ] : [];
+
         } else {
             const childNodes = [];
             nodes.forEach(node => {
                 if (isDirectChild) {
-                    childNodes.push(...Array.from(node.childNodes).filter(node => node.tagName === nodeName));
+                    if (nodeName) {
+                        childNodes.push(...Array.from(node.childNodes).filter(node => node.tagName === nodeName));
+                    } else {
+                        childNodes.push(...Array.from(node.childNodes));
+                    }
                 } else {
-                    childNodes.push(...Array.from(node.getElementsByTagName(nodeName)));
+                    childNodes.push(...Array.from(node.getElementsByTagName(nodeName ? nodeName : '*')));
                 }
             });
-            if (index === undefined) {
-                nodes = childNodes;
-            } else {
-                const childNode = childNodes[index];
+            nodes = childNodes;
+
+            if (attributeName && attributeValue) {
+                nodes = childNodes.filter(node => node.getAttribute(attributeName) === attributeValue);
+            } else if (attributeName) {
+                nodes = childNodes.filter(node => node.getAttribute(attributeName));
+            }
+
+            if (index !== undefined) {
+                const childNode = nodes[index];
                 nodes = childNode ? [ childNode ] : [];
             }
         }
     }
+
     return nodes;
 }
 
