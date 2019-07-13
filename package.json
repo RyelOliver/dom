@@ -1,12 +1,18 @@
 {
   "name": "dom",
   "version": "1.0.0",
-  "description": "",
+  "description": "An extension to `xmldom`'s JavaScript implementation of W3C DOM. `getNodesByPath` and `getNodeByPath` are to be used in a manner similar to `querySelectorAll` and `querySelector`.",
   "main": "index.js",
   "scripts": {
     "test": "jest --watch"
   },
-  "keywords": [],
+  "keywords": [
+    "javascript",
+    "dom",
+    "xml",
+    "xmldom",
+    "queryselector"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {},
