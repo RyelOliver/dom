@@ -2,8 +2,10 @@ function parsePath(path) {
     return path
         // Remove trailing space from '>'
         .replace(/>\s+/g, '>')
-        // Add leading space to '>'
-        .replace(/(\S)>/g, (match, nonWhiteSpaceCharacter) => `${nonWhiteSpaceCharacter} >`)
+        // Remove trailing space from '#'
+        .replace(/#\s+/g, '#')
+        // Add leading space to '>' and '#'
+        .replace(/(\S)([>#]{1,2})/g, (match, nonWhiteSpaceCharacter, childOrIdSelector) => `${nonWhiteSpaceCharacter} ${childOrIdSelector}`)
         // Remove leading and spaces within '(n)'
         .replace(/\s*\(\s*(\S*)\s*\)/g, (match, nonWhiteSpaceCharacter) => `(${nonWhiteSpaceCharacter})`)
         // Add trailing space to '(n)'
@@ -15,13 +17,22 @@ function parsePath(path) {
             let nodeName = selector;
             let isDirectChild = false;
             let index;
+            let isId = false;
 
-            if (nodeName.indexOf('>') >= 0) {
+            if (nodeName.indexOf('>') === 0) {
                 nodeName = nodeName.substring(1);
                 isDirectChild = true;
 
                 if (nodeName.length === 0)
                     throw Error('\'>\' selectors require a following node name');
+            }
+
+            if (nodeName.indexOf('#') === 0) {
+                nodeName = nodeName.substring(1);
+                isId = true;
+
+                if (nodeName.length === 0)
+                    throw Error('\'#\' selectors require a following id');
             }
 
             if (/(\(.+\))/.test(nodeName)) {
@@ -34,7 +45,7 @@ function parsePath(path) {
                 index = parseInt(match[2]);
             }
 
-            return { nodeName, isDirectChild, index };
+            return { nodeName, isDirectChild, index, isId };
         });
 }
 
@@ -42,20 +53,29 @@ function getNodesByPath(node, path) {
     const selectors = parsePath(path);
     let nodes = [ node ];
     while (selectors.length) {
-        const { nodeName, isDirectChild, index } = selectors.shift();
-        const childNodes = [];
-        nodes.forEach(node => {
-            if (isDirectChild) {
-                childNodes.push(...Array.from(node.childNodes).filter(node => node.tagName === nodeName));
-            } else {
-                childNodes.push(...Array.from(node.getElementsByTagName(nodeName)));
+        const { nodeName, isDirectChild, index, isId } = selectors.shift();
+        if (isId) {
+            let childNode;
+            while (!childNode && nodes.length > 0) {
+                const node = nodes.shift();
+                childNode = node.getElementById(nodeName);
             }
-        });
-        if (index === undefined) {
-            nodes = childNodes;
+            nodes = childNode ? [ childNode ] : [];
         } else {
-            const node = childNodes[index];
-            nodes = node ? [ node ] : [];
+            const childNodes = [];
+            nodes.forEach(node => {
+                if (isDirectChild) {
+                    childNodes.push(...Array.from(node.childNodes).filter(node => node.tagName === nodeName));
+                } else {
+                    childNodes.push(...Array.from(node.getElementsByTagName(nodeName)));
+                }
+            });
+            if (index === undefined) {
+                nodes = childNodes;
+            } else {
+                const childNode = childNodes[index];
+                nodes = childNode ? [ childNode ] : [];
+            }
         }
     }
     return nodes;
