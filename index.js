@@ -1,11 +1,13 @@
 function parsePath(path) {
     return path
-        // Remove trailing space from '>'
-        .replace(/>\s+/g, '>')
         // Remove trailing space from '#'
         .replace(/#\s+/g, '#')
-        // Add leading space to '>' and '#'
-        .replace(/(\S)([>#]{1,2})/g, (match, nonWhiteSpaceCharacter, childOrIdSelector) => `${nonWhiteSpaceCharacter} ${childOrIdSelector}`)
+        // Remove trailing space from '>'
+        .replace(/>\s+/g, '>')
+        // Add leading space to '#'
+        .replace(/(\S)#/g, (match, nonWhiteSpaceCharacter) => `${nonWhiteSpaceCharacter} #`)
+        // Add leading space to '>'
+        .replace(/(\S)>/g, (match, nonWhiteSpaceCharacter) => `${nonWhiteSpaceCharacter} >`)
         // Remove leading space from '['
         .replace(/\s+\]/g, ']')
         // Remove trailing space from '['
@@ -19,7 +21,7 @@ function parsePath(path) {
         .split(' ')
         // Remove any whitespace
         .filter(Boolean)
-        .map(selector => {
+        .map((selector, selectorIndex) => {
             let nodeName = selector;
             let isDirectChild = false;
             let index;
@@ -27,20 +29,22 @@ function parsePath(path) {
             let attributeName;
             let attributeValue;
 
-            if (nodeName.indexOf('>') === 0) {
+            if (nodeName.indexOf('#') === 0) {
+                nodeName = nodeName.substring(1);
+                isId = true;
+
+                if (selectorIndex > 0)
+                    throw Error('\'#\' selectors must be at the start of a provided path');
+
+                if (nodeName.length === 0)
+                    throw Error('\'#\' selectors require a following id');
+
+            } else if (nodeName.indexOf('>') === 0) {
                 nodeName = nodeName.substring(1);
                 isDirectChild = true;
 
                 if (nodeName.length === 0)
                     throw Error('\'>\' selectors require a following node name');
-            }
-
-            if (nodeName.indexOf('#') === 0) {
-                nodeName = nodeName.substring(1);
-                isId = true;
-
-                if (nodeName.length === 0)
-                    throw Error('\'#\' selectors require a following id');
             }
 
             if (/\[.*\]/.test(nodeName)) {
@@ -54,7 +58,11 @@ function parsePath(path) {
 
                     attributeName = match[1];
                     attributeValue = match[2];
+
                 }
+
+                if (/[#>\[\]=""\(\)]/.test(attributeName) || /[#>\[\]=""\(\)]/.test(attributeValue))
+                    throw Error('An attribute must not include any reserved characters \'#>[]=""()\'');
             }
 
             if (/\(.+\)/.test(nodeName)) {
@@ -66,6 +74,9 @@ function parsePath(path) {
                 nodeName = match[1];
                 index = parseInt(match[2]);
             }
+
+            if (/[#>\[\]=""\(\)]/.test(nodeName))
+                throw Error('A node name must not include any reserved characters \'#>[]=""()\'');
 
             return { nodeName, isDirectChild, index, isId, attributeName, attributeValue };
         });
@@ -82,6 +93,8 @@ function getNodesByPath(node, path) {
             let childNode;
             while (!childNode && nodes.length > 0) {
                 const node = nodes.shift();
+                if (!node.getElementById)
+                    throw Error('\'#\' selectors must be used from a document node');
                 childNode = node.getElementById(nodeName);
             }
             nodes = childNode ? [ childNode ] : [];

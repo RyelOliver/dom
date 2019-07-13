@@ -64,6 +64,13 @@ describe('Path parser', () => {
         expect(parsePath('# id')).toStrictEqual(expected);
     });
 
+    it('Should error parsing an id selector which isn\'t at the start of the path or that is without an id', () => {
+        expect(() => parsePath('w:p #id')).toThrowError('\'#\' selectors must be at the start of a provided path');
+        expect(() => parsePath('#')).toThrowError('\'#\' selectors require a following id');
+        expect(() => parsePath('>#id')).toThrowError('\'>\' selectors require a following node name');
+        expect(() => parsePath('#>id')).toThrowError('\'#\' selectors require a following id');
+    });
+
     it('Should parse attribute selectors', () => {
         const expected = [
             { nodeName: undefined, isDirectChild: false, index: undefined, isId: false, attributeName: 'hidden', attributeValue: undefined },
@@ -98,39 +105,55 @@ describe('Path parser', () => {
         expect(parsePath('#paragraph-6 > w:r(1) w:t[xml:space="preserve"]')).toStrictEqual(expected);
         expect(parsePath('  #paragraph-6 >w:r (1)w:t[xml:space="preserve"] ')).toStrictEqual(expected);
     });
+
+    it('Should error parsing any reserved characters', () => {
+        expect(() => parsePath('[')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath(']')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath('=')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath('"')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath('(')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath(')')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
+
+        expect(() => parsePath('[>]')).toThrowError('An attribute must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath('["]')).toThrowError('An attribute must not include any reserved characters \'#>[]=""()\'');
+    });
 });
 
 describe('Get nodes', () => {
     let xmlDocument;
     beforeEach(() => {
         xmlDocument = new DOMParser().parseFromString(`
-            <xml>
-                <w:p />
-                <w:p>
-                    <w:r>
-                        <w:t>First</w:t>
-                    </w:r>
-                    <w:r>
-                        <w:t xml:space="preserve"> and second</w:t>
-                    </w:r>
-                </w:p>
-                <w:p hidden>Third</w:p>
-                <w:p />
-                <w:p>
-                    <w:ins>
-                        <w:r>
-                            <w:t xml:space="preserve"> and </w:t>
-                        </w:r>
-                    </w:ins>
-                </w:p>
-                <w:p id="paragraph-6" w14:paraId="707BD5C8">
-                    <w:r>
-                        <w:t>Fourth</w:t>
-                    </w:r>
-                    <w:r>
-                        <w:t xml:space="preserve"> and fifth</w:t>
-                    </w:r>
-                </w:p>
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <w:document>
+                    <w:body>
+                        <w:p />
+                        <w:p>
+                            <w:r>
+                                <w:t>First</w:t>
+                            </w:r>
+                            <w:r>
+                                <w:t xml:space="preserve"> and second</w:t>
+                            </w:r>
+                        </w:p>
+                        <w:p hidden>Third</w:p>
+                        <w:p />
+                        <w:p>
+                            <w:ins>
+                                <w:r>
+                                    <w:t xml:space="preserve"> and </w:t>
+                                </w:r>
+                            </w:ins>
+                        </w:p>
+                        <w:p id="paragraph-6" w14:paraId="707BD5C8">
+                            <w:r>
+                                <w:t>Fourth</w:t>
+                            </w:r>
+                            <w:r>
+                                <w:t xml:space="preserve"> and fifth</w:t>
+                            </w:r>
+                        </w:p>
+                    </w:body>
+                </w:document>
             </xml>`, 'text/xml'
         );
     });
@@ -150,9 +173,12 @@ describe('Get nodes', () => {
 
         it('Should get all direct child nodes matching the node name', () => {
             const expected = [
+                'First',
+                ' and second',
                 'Fourth',
+                ' and fifth',
             ];
-            const actual = getNodesByPath(xmlDocument, 'w:p > w:r(2) w:t').map(t => t.textContent);
+            const actual = getNodesByPath(xmlDocument, 'w:p > w:r w:t').map(t => t.textContent);
             expect(actual).toStrictEqual(expected);
         });
 
@@ -191,6 +217,11 @@ describe('Get nodes', () => {
             const expected = 'Third';
             const actual = getNodeByPath(xmlDocument, '[hidden]').textContent;
             expect(actual).toEqual(expected);
+        });
+
+        it('Should error using an id selector from a node other than a document node', () => {
+            const body = getNodeByPath(xmlDocument, 'w:body');
+            expect(() => getNodeByPath(body, '#paragraph-6')).toThrowError('\'#\' selectors must be used from a document node');
         });
     });
 });
