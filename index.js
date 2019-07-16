@@ -18,16 +18,18 @@ function parsePath(path) {
         .replace(/\s*\(\s*(\S*)\s*\)/g, (match, nonWhiteSpaceCharacter) => `(${nonWhiteSpaceCharacter})`)
         // Add trailing space to '(n)'
         .replace(/(\(\S*\))(\S)/g, (match, indexSelector, nonWhiteSpaceCharacter) => `${indexSelector} ${nonWhiteSpaceCharacter}`)
+        // Remove leading and trailing space from '|'
+        .replace(/\s*\|\s*/g, '|')
         .split(' ')
         // Remove any whitespace
         .filter(Boolean)
         .map((selector, selectorIndex) => {
             let nodeName = selector;
-            let isDirectChild = false;
-            let index;
             let isId = false;
+            let isDirectChild = false;
             let attributeName;
             let attributeValue;
+            let index;
 
             if (nodeName.indexOf('#') === 0) {
                 nodeName = nodeName.substring(1);
@@ -45,6 +47,23 @@ function parsePath(path) {
 
                 if (nodeName.length === 0)
                     throw Error('\'>\' selectors require a following node name');
+            }
+
+            if (nodeName.includes('|')) {
+                if (isId)
+                    throw Error('\'#\' selectors must not be used in combination with multiple node names');
+
+                const nodeNames = nodeName.split('|');
+
+                if (nodeNames.length < 2 || nodeNames.some(name => !name))
+                    throw Error('Multiple node names must be provided when using or selectors');
+
+                nodeNames.forEach(name => {
+                    if (/[#>\[\]=""\(\)]/.test(name))
+                        throw Error('A node name provided to an or selector must not include any reserved characters \'#>[]=""()\'');
+                });
+
+                nodeName = nodeNames;
             }
 
             if (/\[.*\]/.test(nodeName)) {
@@ -78,8 +97,21 @@ function parsePath(path) {
             if (/[#>\[\]=""\(\)]/.test(nodeName))
                 throw Error('A node name must not include any reserved characters \'#>[]=""()\'');
 
-            return { nodeName, isDirectChild, index, isId, attributeName, attributeValue };
+            return { nodeName, isId, isDirectChild, attributeName, attributeValue, index };
         });
+}
+
+function getNodesByNodeNames(node, nodeNames) {
+    const nodes = [];
+    if (node.childNodes)
+        Array.from(node.childNodes)
+            .forEach(node => {
+                if (nodeNames.includes(node.tagName))
+                    nodes.push(node);
+
+                nodes.push(...getNodesByNodeNames(node, nodeNames));
+            });
+    return nodes;
 }
 
 function getNodesByPath(node, path) {
@@ -103,11 +135,15 @@ function getNodesByPath(node, path) {
             const childNodes = [];
             nodes.forEach(node => {
                 if (isDirectChild) {
-                    if (nodeName) {
+                    if (Array.isArray(nodeName)) {
+                        childNodes.push(...Array.from(node.childNodes).filter(node => nodeName.includes(node.tagName)));
+                    } else if (nodeName) {
                         childNodes.push(...Array.from(node.childNodes).filter(node => node.tagName === nodeName));
                     } else {
                         childNodes.push(...Array.from(node.childNodes));
                     }
+                } else if (Array.isArray(nodeName)) {
+                    childNodes.push(...Array.from(getNodesByNodeNames(node, nodeName)));
                 } else {
                     childNodes.push(...Array.from(node.getElementsByTagName(nodeName ? nodeName : '*')));
                 }
@@ -137,6 +173,7 @@ function getNodeByPath(node, path) {
 
 module.exports = {
     parsePath,
+    getNodesByNodeNames,
     getNodesByPath,
     getNodeByPath,
 };

@@ -30,32 +30,6 @@ describe('Path parser', () => {
         expect(parsePath(' w:r  w:t ')).toStrictEqual(expected);
     });
 
-    it('Should parse a direct child node selector', () => {
-        const expected = [
-            { nodeName: 'w:t', isDirectChild: true, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
-        ];
-        expect(parsePath('>w:t')).toStrictEqual(expected);
-        expect(parsePath('> w:t')).toStrictEqual(expected);
-    });
-
-    it('Should error parsing a direct child node selector without a following node name', () => {
-        expect(() => parsePath('>')).toThrowError('\'>\' selectors require a following node name');
-    });
-
-    it('Should parse index selectors', () => {
-        const expected = [
-            { nodeName: 'w:r', isDirectChild: false, index: 0, isId: false, attributeName: undefined, attributeValue: undefined },
-            { nodeName: 'w:t', isDirectChild: false, index: 12, isId: false, attributeName: undefined, attributeValue: undefined },
-        ];
-        expect(parsePath('w:r(0) w:t(12)')).toStrictEqual(expected);
-        expect(parsePath('w:r (0)   w:t( 12 )')).toStrictEqual(expected);
-    });
-
-    it('Should error parsing an index selector without a preceding node name or without an integer', () => {
-        expect(() => parsePath('(40)')).toThrowError('\'(n)\' selectors require a preceding node name');
-        expect(() => parsePath('w:t(n)')).toThrowError('\'(n)\' selectors require a preceding node name');
-    });
-
     it('Should parse id selectors', () => {
         const expected = [
             { nodeName: 'id', isDirectChild: false, index: undefined, isId: true, attributeName: undefined, attributeValue: undefined },
@@ -69,6 +43,18 @@ describe('Path parser', () => {
         expect(() => parsePath('#')).toThrowError('\'#\' selectors require a following id');
         expect(() => parsePath('>#id')).toThrowError('\'>\' selectors require a following node name');
         expect(() => parsePath('#>id')).toThrowError('\'#\' selectors require a following id');
+    });
+
+    it('Should parse a direct child node selector', () => {
+        const expected = [
+            { nodeName: 'w:t', isDirectChild: true, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+        ];
+        expect(parsePath('>w:t')).toStrictEqual(expected);
+        expect(parsePath('> w:t')).toStrictEqual(expected);
+    });
+
+    it('Should error parsing a direct child node selector without a following node name', () => {
+        expect(() => parsePath('>')).toThrowError('\'>\' selectors require a following node name');
     });
 
     it('Should parse attribute selectors', () => {
@@ -93,6 +79,40 @@ describe('Path parser', () => {
         ];
         expect(parsePath('w:p[w14:paraId="707BD5C8"]')).toStrictEqual(expected);
         expect(parsePath('w:p[w14:paraId = "707BD5C8"]')).toStrictEqual(expected);
+    });
+
+    it('Should parse index selectors', () => {
+        const expected = [
+            { nodeName: 'w:r', isDirectChild: false, index: 0, isId: false, attributeName: undefined, attributeValue: undefined },
+            { nodeName: 'w:t', isDirectChild: false, index: 12, isId: false, attributeName: undefined, attributeValue: undefined },
+        ];
+        expect(parsePath('w:r(0) w:t(12)')).toStrictEqual(expected);
+        expect(parsePath('w:r (0)   w:t( 12 )')).toStrictEqual(expected);
+    });
+
+    it('Should error parsing an index selector without a preceding node name or without an integer', () => {
+        expect(() => parsePath('(40)')).toThrowError('\'(n)\' selectors require a preceding node name');
+        expect(() => parsePath('w:t(n)')).toThrowError('\'(n)\' selectors require a preceding node name');
+    });
+
+    it('Should parse an or selector', () => {
+        const expected = [
+            { nodeName: [ 'w:ins', 'w:del' ], isDirectChild: false, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+            { nodeName: 'w:r', isDirectChild: true, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+            { nodeName: [ 'w:t', 'w:delText' ], isDirectChild: true, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+        ];
+        expect(parsePath('w:ins|w:del > w:r > w:t|w:delText')).toStrictEqual(expected);
+        expect(parsePath('  w:ins | w:del >w:r> w:t|  w:delText ')).toStrictEqual(expected);
+    });
+
+    it('Should error parsing an or selector without multiple node names', () => {
+        expect(() => parsePath('w:t|')).toThrowError('Multiple node names must be provided when using or selectors');
+    });
+
+    it('Should error parsing multiple node names used in combination with another selector other than the direct child node selector', () => {
+        expect(() => parsePath('#id|rsid')).toThrowError('\'#\' selectors must not be used in combination with multiple node names');
+        expect(() => parsePath('[hidden]|[required]')).toThrowError('A node name provided to an or selector must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath('w:p(1)|w:p(3)')).toThrowError('A node name provided to an or selector must not include any reserved characters \'#>[]=""()\'');
     });
 
     it('Should parse multiple selectors', () => {
@@ -140,6 +160,16 @@ describe('Get nodes', () => {
                             <w:r>
                                 <w:t xml:space="preserve"> and second</w:t>
                             </w:r>
+                            <w:ins>
+                                <w:del>
+                                    <w:r>
+                                        <w:delText> that's</w:delText>
+                                    </w:r>
+                                </w:del>
+                                <w:r>
+                                    <w:t xml:space="preserve"> right before</w:t>
+                                </w:r>
+                            </w:ins>
                         </w:p>
                         <w:p hidden>Third</w:p>
                         <w:p/>
@@ -169,11 +199,23 @@ describe('Get nodes', () => {
             const expected = [
                 'First',
                 ' and second',
+                ' right before',
                 ' and ',
                 'Fourth',
                 ' and fifth',
             ];
             const actual = getNodesByPath(xmlDocument, 'w:t').map(t => t.textContent);
+            expect(actual).toStrictEqual(expected);
+        });
+
+        it('Should get all child nodes matching either node name', () => {
+            const expected = [
+                ' right before',
+                ' that\'s',
+                ' and ',
+            ];
+            const actual = getNodesByPath(xmlDocument, 'w:ins|w:del > w:r > w:t|w:delText')
+                .map(t => t.textContent);
             expect(actual).toStrictEqual(expected);
         });
 
@@ -218,15 +260,15 @@ describe('Get nodes', () => {
             expect(actual).toEqual(expected);
         });
 
+        it('Should error using an id selector from a node other than a document node', () => {
+            const body = getNodeByPath(xmlDocument, 'w:body');
+            expect(() => getNodeByPath(body, '#paragraph-6')).toThrowError('\'#\' selectors must be used from a document node');
+        });
+
         it('Should get the node matching the attribute', () => {
             const expected = 'Third';
             const actual = getNodeByPath(xmlDocument, '[hidden]').textContent;
             expect(actual).toEqual(expected);
-        });
-
-        it('Should error using an id selector from a node other than a document node', () => {
-            const body = getNodeByPath(xmlDocument, 'w:body');
-            expect(() => getNodeByPath(body, '#paragraph-6')).toThrowError('\'#\' selectors must be used from a document node');
         });
     });
 });
