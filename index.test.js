@@ -75,7 +75,6 @@ describe('Path parser', () => {
         const expected = [
             { nodeName: undefined, isDirectChild: false, index: undefined, isId: false, attributeName: 'hidden', attributeValue: undefined },
         ];
-        // Without an attribute value specified, the value is set to the attribute name
         expect(parsePath('[hidden]')).toStrictEqual(expected);
         expect(parsePath('[ hidden ]')).toStrictEqual(expected);
     });
@@ -122,11 +121,18 @@ describe('Path parser', () => {
 describe('Get nodes', () => {
     let xmlDocument;
     beforeEach(() => {
-        xmlDocument = new DOMParser().parseFromString(`
+        xmlDocument = new DOMParser({
+            errorHandler: function(severity, message) {
+                // Ignore attribute missing a value warning
+                // Without an attribute value specified, the value is set to the attribute name
+                if (!/\[xmldom warning\]\tattribute ".*" missed value!!/.test(message))
+                    severity === 'warning' ? console.warn(message) : console.error(message);
+            },
+        }).parseFromString(`
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <w:document>
                     <w:body>
-                        <w:p />
+                        <w:p/>
                         <w:p>
                             <w:r>
                                 <w:t>First</w:t>
@@ -136,7 +142,7 @@ describe('Get nodes', () => {
                             </w:r>
                         </w:p>
                         <w:p hidden>Third</w:p>
-                        <w:p />
+                        <w:p/>
                         <w:p>
                             <w:ins>
                                 <w:r>
@@ -186,7 +192,6 @@ describe('Get nodes', () => {
             const expected = [
                 'Third',
             ];
-            // Without an attribute value specified, the value is set to the attribute name
             const actual = getNodesByPath(xmlDocument, '[hidden]').map(t => t.textContent);
             expect(actual).toStrictEqual(expected);
         });
