@@ -171,9 +171,123 @@ function getNodeByPath(node, path) {
     return nodes.length > 0 ? nodes[0] : undefined;
 }
 
+function setNodeAttributes(node, attributes) {
+    Object.entries(attributes)
+        .forEach(([ key, value ]) => node.setAttribute(key, value));
+    return node;
+}
+
+function appendChildNodes(node, child) {
+    const children = Array.isArray(child) ? child : [ child ];
+    children.forEach(child => child && node.appendChild(child));
+    return node;
+}
+
+function createNode({ document, name, attributes = {}, children = [] }) {
+    return appendChildNodes(setNodeAttributes(document.createElement(name), attributes), children);
+}
+
+function insertAfterNode(thatNode, thisNode) {
+    return thatNode.nextSibling ?
+        thatNode.parentNode.insertBefore(thisNode, thatNode.nextSibling) :
+        thatNode.parentNode.appendChild(thisNode);
+}
+
+function insertBeforeNode(thatNode, thisNode) {
+    return thatNode.parentNode.insertBefore(thisNode, thatNode);
+}
+
+function removeNode(node) {
+    return node.parentNode.removeChild(node);
+}
+
+// Syntactic sugar
+function get(path) {
+    let all = false;
+    return {
+        all: function() {
+            all = true;
+            return this;
+        },
+        from: function(node) {
+            return all ? getNodesByPath(node, path) : getNodeByPath(node, path);
+        },
+    };
+}
+
+function set(attributes) {
+    return {
+        to: function(node) {
+            return setNodeAttributes(node, attributes);
+        },
+    };
+}
+
+function append(child) {
+    const children = Array.isArray(child) ? child : [ child ];
+    return {
+        to: function(node) {
+            return appendChildNodes(node, children);
+        },
+    };
+}
+
+function create(name) {
+    const attributes = {};
+    const children = [];
+    return {
+        withAttributes: function(attrs) {
+            Object.entries(attrs)
+                .forEach(([ key, value ]) => attributes[key] = value);
+            return this;
+        },
+        andAttributes: function(attrs) {
+            return this.withAttributes(attrs);
+        },
+        withChildren: function(child) {
+            const childs = Array.isArray(child) ? child : [ child ];
+            children.push(...childs);
+            return this;
+        },
+        andChildren: function(childs) {
+            return this.withChildren(childs);
+        },
+        for: function(document) {
+            return createNode({ document, name, attributes, children });
+        },
+    };
+}
+
+function insert(thisNode) {
+    return {
+        after: function(thatNode) {
+            return insertAfterNode(thatNode, thisNode);
+        },
+        before: function(thatNode) {
+            return insertBeforeNode(thatNode, thisNode);
+        },
+    };
+}
+
+function remove(node) {
+    return removeNode(node);
+}
+
 module.exports = {
     parsePath,
     getNodesByNodeNames,
     getNodesByPath,
     getNodeByPath,
+    setNodeAttributes,
+    appendChildNodes,
+    createNode,
+    insertAfterNode,
+    insertBeforeNode,
+    removeNode,
+    get,
+    set,
+    append,
+    create,
+    insert,
+    remove,
 };
