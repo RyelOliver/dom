@@ -114,12 +114,10 @@ function getNodesByNodeNames(node, nodeNames) {
     return nodes;
 }
 
-function getNodesByPath(node, path) {
-    const selectors = parsePath(path);
-
+function _getNodesBySelectors(node, selectors) {
     let nodes = [ node ];
     while (selectors.length) {
-        const { nodeName, isDirectChild, index, isId, attributeName, attributeValue } = selectors.shift();
+        const { isId, isDirectChild, nodeName, attributeName, attributeValue, index } = selectors.shift();
 
         if (isId) {
             let childNode;
@@ -164,6 +162,21 @@ function getNodesByPath(node, path) {
     }
 
     return nodes;
+}
+
+function getNodesByPath(node, path) {
+    const selectors = parsePath(path);
+
+    if (selectors.length <= 1) {
+        return _getNodesBySelectors(node, selectors);
+    } else {
+        const lastSelector = selectors[selectors.length - 1];
+        lastSelector.isId = false;
+        lastSelector.isDirectChild = false;
+        const nodesMatchingLastSelector = _getNodesBySelectors(node, [ lastSelector ]);
+        const nodesMatchingFullSelector = _getNodesBySelectors(node, selectors);
+        return nodesMatchingLastSelector.filter(node => nodesMatchingFullSelector.includes(node));
+    }
 }
 
 function getNodeByPath(node, path) {
