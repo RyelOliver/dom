@@ -15,6 +15,11 @@ const Invalid = {
     index: '\'(n)\' selectors require an integer with a preceding node name, e.g. w:t(0)',
 };
 
+const Direction = {
+    previous: 'previous',
+    next: 'next',
+};
+
 function parsePath(path) {
     return path
         // Remove trailing space from '#'
@@ -228,6 +233,59 @@ function getNodeByPath(node, path) {
     return nodes.length > 0 ? nodes[0] : undefined;
 }
 
+function _getAdjacentNodeWithNodeName(node, nodeName, direction) {
+    let adjacentNode = node;
+    while (adjacentNode[`${direction}Sibling`]) {
+        adjacentNode = adjacentNode[`${direction}Sibling`];
+
+        if (adjacentNode.nodeName === nodeName)
+            return adjacentNode;
+
+        if (adjacentNode.childNodes) {
+            const childNode = getNodeByPath(adjacentNode, nodeName);
+            if (childNode)
+                return childNode;
+        }
+    }
+
+    if (!node.parentNode)
+        return undefined;
+
+    return _getAdjacentNodeWithNodeName(node.parentNode, nodeName, direction);
+}
+
+function getPreviousNodeWithNodeName(node, nodeName) {
+    return _getAdjacentNodeWithNodeName(node, nodeName, Direction.previous);
+}
+
+function getNextNodeWithNodeName(node, nodeName) {
+    return _getAdjacentNodeWithNodeName(node, nodeName, Direction.next);
+}
+
+function _getAdjacentNodesWithNodeName(node, nodeName, direction, untilNode) {
+    if (node === untilNode)
+        return [ node ];
+
+    const adjacentNodes = [];
+    let adjacentNode = node;
+
+    while (adjacentNode && adjacentNode !== untilNode) {
+        adjacentNode = _getAdjacentNodeWithNodeName(adjacentNode, nodeName, direction);
+        if (adjacentNode)
+            adjacentNodes.push(adjacentNode);
+    }
+
+    return adjacentNodes;
+}
+
+function getPreviousNodesWithNodeName(node, nodeName, untilNode) {
+    return _getAdjacentNodesWithNodeName(node, nodeName, Direction.previous, untilNode);
+}
+
+function getNextNodesWithNodeName(node, nodeName, untilNode) {
+    return _getAdjacentNodesWithNodeName(node, nodeName, Direction.next, untilNode);
+}
+
 function setNodeAttributes(node, attributes) {
     Object.entries(attributes)
         .forEach(([ key, value ]) => node.setAttribute(key, value));
@@ -261,13 +319,46 @@ function removeNode(node) {
 // Syntactic sugar
 function get(path) {
     let all = false;
+    let previous = false;
+    let next = false;
+    let untilNode;
     return {
         all: function() {
             all = true;
             return this;
         },
+        previous: function() {
+            previous = true;
+            next = false;
+            return this;
+        },
+        next: function() {
+            previous = false;
+            next = true;
+            return this;
+        },
+        until: function(node) {
+            all = true;
+            untilNode = node;
+            return this;
+        },
         from: function(node) {
-            return all ? getNodesByPath(node, path) : getNodeByPath(node, path);
+            if (all && previous)
+                return getPreviousNodesWithNodeName(node, path, untilNode);
+
+            if (all && next)
+                return getNextNodesWithNodeName(node, path, untilNode);
+
+            if (previous)
+                return getPreviousNodeWithNodeName(node, path);
+
+            if (next)
+                return getNextNodeWithNodeName(node, path);
+
+            if (all)
+                return getNodesByPath(node, path);
+
+            return getNodeByPath(node, path);
         },
     };
 }
@@ -336,6 +427,10 @@ module.exports = {
     getNodesByNodeNames,
     getNodesByPath,
     getNodeByPath,
+    getPreviousNodeWithNodeName,
+    getNextNodeWithNodeName,
+    getPreviousNodesWithNodeName,
+    getNextNodesWithNodeName,
     setNodeAttributes,
     appendChildNodes,
     createNode,

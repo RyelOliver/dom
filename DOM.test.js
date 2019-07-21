@@ -4,6 +4,10 @@ const {
     parsePath,
     getNodesByPath,
     getNodeByPath,
+    getPreviousNodeWithNodeName,
+    getNextNodeWithNodeName,
+    getPreviousNodesWithNodeName,
+    getNextNodesWithNodeName,
     setNodeAttributes,
     appendChildNodes,
     createNode,
@@ -444,6 +448,168 @@ describe('Getting and manipulating nodes', () => {
                 const expected = '707BD5C8';
                 const actual = get('#paragraph-6').from(xmlDocument).getAttribute(Word.paraId);
                 expect(actual).toEqual(expected);
+            });
+        });
+
+        describe('Getting adjacent nodes', () => {
+            describe('Get previous node with node name', () => {
+                it('Should get the previous node matching the node name', () => {
+                    const expected = ' and second';
+
+                    const path = `${Word.ins} > ${Word.r} > ${Word.t}`;
+                    const fromNode = getNodeByPath(xmlDocument, path);
+
+                    const actual = getPreviousNodeWithNodeName(fromNode, Word.t).textContent;
+                    expect(actual).toStrictEqual(expected);
+                });
+
+                it('Should support syntactic sugar', () => {
+                    const expected = ' and second';
+                    const fromNode = get(`${Word.ins} > ${Word.r} > ${Word.t}`).from(xmlDocument);
+                    const actual = get(Word.t).previous().from(fromNode).textContent;
+                    expect(actual).toStrictEqual(expected);
+                });
+            });
+
+            describe('Get next node with node name', () => {
+                it('Should get the next node matching the node name', () => {
+                    const expected = ' and ';
+
+                    const path = `${Word.ins} > ${Word.r} > ${Word.t}`;
+                    const fromNode = getNodeByPath(xmlDocument, path);
+
+                    const actual = getNextNodeWithNodeName(fromNode, Word.t).textContent;
+                    expect(actual).toStrictEqual(expected);
+                });
+
+                it('Should support syntactic sugar', () => {
+                    const expected = ' and ';
+                    const fromNode = get(`${Word.ins} > ${Word.r} > ${Word.t}`).from(xmlDocument);
+                    const actual = get(Word.t).next().from(fromNode).textContent;
+                    expect(actual).toStrictEqual(expected);
+                });
+            });
+
+            describe('Get all previous nodes with node name', () => {
+                it('Should get all the previous nodes matching the node name', () => {
+                    const expected = [
+                        ' and second',
+                        'First',
+                    ];
+
+                    const path = `${Word.ins} > ${Word.r} > ${Word.t}`;
+                    const fromNode = getNodeByPath(xmlDocument, path);
+
+                    const actual = getPreviousNodesWithNodeName(fromNode, Word.t)
+                        .map(wT => wT.textContent);
+                    expect(actual).toStrictEqual(expected);
+                });
+
+                it('Should support syntactic sugar', () => {
+                    const expected = [
+                        ' and second',
+                        'First',
+                    ];
+                    const fromNode = get(`${Word.ins} > ${Word.r} > ${Word.t}`).from(xmlDocument);
+                    const actual = get(Word.t).all().previous().from(fromNode)
+                        .map(wT => wT.textContent);
+                    expect(actual).toStrictEqual(expected);
+                });
+            });
+
+            describe('Get all next nodes with node name', () => {
+                it('Should get all the next nodes matching the node name', () => {
+                    const expected = [
+                        ' and ',
+                        'Fourth',
+                        ' and fifth',
+                    ];
+
+                    const path = `${Word.ins} > ${Word.r} > ${Word.t}`;
+                    const fromNode = getNodeByPath(xmlDocument, path);
+
+                    const actual = getNextNodesWithNodeName(fromNode, Word.t)
+                        .map(wT => wT.textContent);
+                    expect(actual).toStrictEqual(expected);
+                });
+
+                it('Should support syntactic sugar', () => {
+                    const expected = [
+                        ' and ',
+                        'Fourth',
+                        ' and fifth',
+                    ];
+                    const fromNode = get(`${Word.ins} > ${Word.r} > ${Word.t}`).from(xmlDocument);
+                    const actual = get(Word.t).all().next().from(fromNode)
+                        .map(wT => wT.textContent);
+                    expect(actual).toStrictEqual(expected);
+                });
+            });
+
+            describe('Get all previous nodes with node name until a node', () => {
+                it('Should get all the previous nodes matching the node name until a node', () => {
+                    const expected = [
+                        ' and second',
+                    ];
+
+                    const fromPath = `${Word.ins} > ${Word.r} > ${Word.t}`;
+                    const untilPath = `[${Word.space}="${Word.preserve}"]`;
+                    const fromNode = getNodeByPath(xmlDocument, fromPath);
+                    const untilNode = getNodeByPath(xmlDocument, untilPath);
+
+                    const actual = getPreviousNodesWithNodeName(fromNode, Word.t, untilNode)
+                        .map(wT => wT.textContent);
+                    expect(actual).toStrictEqual(expected);
+                });
+
+                it('Should support syntactic sugar', () => {
+                    const expected = [
+                        ' and second',
+                    ];
+
+                    const fromPath = `${Word.ins} > ${Word.r} > ${Word.t}`;
+                    const untilPath = `[${Word.space}="${Word.preserve}"]`;
+                    const fromNode = get(fromPath).from(xmlDocument);
+                    const untilNode = get(untilPath).from(xmlDocument);
+
+                    const actual = get(Word.t).previous().until(untilNode).from(fromNode)
+                        .map(wT => wT.textContent);
+                    expect(actual).toStrictEqual(expected);
+                });
+            });
+
+            describe('Get all next nodes with node name until a node', () => {
+                it('Should get all the next nodes matching the node name until a node', () => {
+                    const expected = [
+                        ' and ',
+                        'Fourth',
+                    ];
+
+                    const fromPath = `${Word.ins} > ${Word.r} > ${Word.t}`;
+                    const untilPath = `[${Word.paraId}="707BD5C8"] > ${Word.r} > ${Word.t}`;
+                    const fromNode = getNodeByPath(xmlDocument, fromPath);
+                    const untilNode = getNodeByPath(xmlDocument, untilPath);
+
+                    const actual = getNextNodesWithNodeName(fromNode, Word.t, untilNode)
+                        .map(wT => wT.textContent);
+                    expect(actual).toStrictEqual(expected);
+                });
+
+                it('Should support syntactic sugar', () => {
+                    const expected = [
+                        ' and ',
+                        'Fourth',
+                    ];
+
+                    const fromPath = `${Word.ins} > ${Word.r} > ${Word.t}`;
+                    const untilPath = `[${Word.paraId}="707BD5C8"] > ${Word.r} > ${Word.t}`;
+                    const fromNode = get(fromPath).from(xmlDocument);
+                    const untilNode = get(untilPath).from(xmlDocument);
+
+                    const actual = get(Word.t).next().until(untilNode).from(fromNode)
+                        .map(wT => wT.textContent);
+                    expect(actual).toStrictEqual(expected);
+                });
             });
         });
     });
