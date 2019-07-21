@@ -1,5 +1,6 @@
 const { DOMParser } = require('xmldom');
 const {
+    Invalid,
     parsePath,
     getNodesByPath,
     getNodeByPath,
@@ -55,7 +56,12 @@ const Word = {
 describe('Path parser', () => {
     it('Should parse a single node name selector', () => {
         const expected = [
-            { nodeName: Word.t, isDirectChild: false, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.t,
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
         ];
         const actual = parsePath(Word.t);
         expect(actual).toStrictEqual(expected);
@@ -63,8 +69,18 @@ describe('Path parser', () => {
 
     it('Should parse multiple node name selectors', () => {
         const expected = [
-            { nodeName: Word.r, isDirectChild: false, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
-            { nodeName: Word.t, isDirectChild: false, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.r,
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.t,
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
         ];
         const actual = parsePath(`${Word.r} ${Word.t}`);
         expect(actual).toStrictEqual(expected);
@@ -72,8 +88,18 @@ describe('Path parser', () => {
 
     it('Should parse multiple node name selectors with varying spaces', () => {
         const expected = [
-            { nodeName: Word.r, isDirectChild: false, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
-            { nodeName: Word.t, isDirectChild: false, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.r,
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.t,
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
         ];
         expect(parsePath(`${Word.r}  ${Word.t}`)).toStrictEqual(expected);
         expect(parsePath(` ${Word.r} ${Word.t}`)).toStrictEqual(expected);
@@ -83,34 +109,49 @@ describe('Path parser', () => {
 
     it('Should parse id selectors', () => {
         const expected = [
-            { nodeName: 'id', isDirectChild: false, index: undefined, isId: true, attributeName: undefined, attributeValue: undefined },
+            {
+                isId: true, isDirectChild: false,
+                nodeName: 'id',
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
         ];
         expect(parsePath('#id')).toStrictEqual(expected);
         expect(parsePath('# id')).toStrictEqual(expected);
     });
 
-    it('Should error parsing an id selector which isn\'t at the start of the path or that is without an id', () => {
-        expect(() => parsePath(`${Word.p} #id`)).toThrowError('\'#\' selectors must be at the start of a provided path');
-        expect(() => parsePath('#')).toThrowError('\'#\' selectors require a following id');
-        expect(() => parsePath('>#id')).toThrowError('\'>\' selectors require a following node name');
-        expect(() => parsePath('#>id')).toThrowError('\'#\' selectors require a following id');
+    it('Should error parsing an invalid id selector', () => {
+        expect(() => parsePath(`${Word.p} #id`)).toThrowError(Invalid.id.notAtStart);
+        expect(() => parsePath('#')).toThrowError(Invalid.id.nodeName);
+        expect(() => parsePath('>#id')).toThrowError(Invalid.directChild);
+        expect(() => parsePath('#>id')).toThrowError(Invalid.id.nodeName);
     });
 
     it('Should parse a direct child node selector', () => {
         const expected = [
-            { nodeName: Word.t, isDirectChild: true, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+            {
+                isId: false, isDirectChild: true,
+                nodeName: Word.t,
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
         ];
         expect(parsePath(`>${Word.t}`)).toStrictEqual(expected);
         expect(parsePath(`> ${Word.t}`)).toStrictEqual(expected);
     });
 
     it('Should error parsing a direct child node selector without a following node name', () => {
-        expect(() => parsePath('>')).toThrowError('\'>\' selectors require a following node name');
+        expect(() => parsePath('>')).toThrowError(Invalid.directChild);
     });
 
     it('Should parse attribute selectors', () => {
         const expected = [
-            { nodeName: undefined, isDirectChild: false, index: undefined, isId: false, attributeName: 'hidden', attributeValue: undefined },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: undefined,
+                attributeName: 'hidden', attributeValue: undefined,
+                index: undefined,
+            },
         ];
         expect(parsePath('[hidden]')).toStrictEqual(expected);
         expect(parsePath('[ hidden ]')).toStrictEqual(expected);
@@ -118,7 +159,12 @@ describe('Path parser', () => {
 
     it('Should parse attribute value selectors', () => {
         const expected = [
-            { nodeName: undefined, isDirectChild: false, index: undefined, isId: false, attributeName: Word.paraId, attributeValue: '707BD5C8' },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: undefined,
+                attributeName: Word.paraId, attributeValue: '707BD5C8',
+                index: undefined,
+            },
         ];
         expect(parsePath(`[${Word.paraId}="707BD5C8"]`)).toStrictEqual(expected);
         expect(parsePath(`[${Word.paraId} = "707BD5C8"]`)).toStrictEqual(expected);
@@ -126,7 +172,12 @@ describe('Path parser', () => {
 
     it('Should parse node name and attribute value selectors', () => {
         const expected = [
-            { nodeName: Word.p, isDirectChild: false, index: undefined, isId: false, attributeName: Word.paraId, attributeValue: '707BD5C8' },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.p,
+                attributeName: Word.paraId, attributeValue: '707BD5C8',
+                index: undefined,
+            },
         ];
         expect(parsePath(`${Word.p}[${Word.paraId}="707BD5C8"]`)).toStrictEqual(expected);
         expect(parsePath(`${Word.p}[${Word.paraId} = "707BD5C8"]`)).toStrictEqual(expected);
@@ -134,58 +185,108 @@ describe('Path parser', () => {
 
     it('Should parse index selectors', () => {
         const expected = [
-            { nodeName: Word.r, isDirectChild: false, index: 0, isId: false, attributeName: undefined, attributeValue: undefined },
-            { nodeName: Word.t, isDirectChild: false, index: 12, isId: false, attributeName: undefined, attributeValue: undefined },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.r,
+                attributeName: undefined, attributeValue: undefined,
+                index: 0,
+            },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.t,
+                attributeName: undefined, attributeValue: undefined,
+                index: 12,
+            },
         ];
         expect(parsePath(`${Word.r}(0) ${Word.t}(12)`)).toStrictEqual(expected);
         expect(parsePath(`${Word.r} (0)   ${Word.t}( 12 )`)).toStrictEqual(expected);
     });
 
-    it('Should error parsing an index selector without a preceding node name or without an integer', () => {
-        expect(() => parsePath('(40)')).toThrowError('\'(n)\' selectors require a preceding node name');
-        expect(() => parsePath(`${Word.t}(n)`)).toThrowError('\'(n)\' selectors require a preceding node name');
+    it('Should error parsing an invalid index selector', () => {
+        expect(() => parsePath('(40)')).toThrowError(Invalid.index);
+        expect(() => parsePath(`${Word.t}(n)`)).toThrowError(Invalid.index);
     });
 
     it('Should parse an or selector', () => {
         const expected = [
-            { nodeName: [ Word.ins, Word.del ], isDirectChild: false, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
-            { nodeName: Word.r, isDirectChild: true, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
-            { nodeName: [ Word.t, Word.delText ], isDirectChild: true, index: undefined, isId: false, attributeName: undefined, attributeValue: undefined },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: [ Word.ins, Word.del ],
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
+            {
+                isId: false, isDirectChild: true,
+                nodeName: Word.r,
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
+            {
+                isId: false, isDirectChild: true,
+                nodeName: [ Word.t, Word.delText ],
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
         ];
-        expect(parsePath(`${Word.ins}|${Word.del} > ${Word.r} > ${Word.t}|${Word.delText}`)).toStrictEqual(expected);
-        expect(parsePath(`  ${Word.ins} | ${Word.del} >${Word.r}> ${Word.t}|  ${Word.delText} `)).toStrictEqual(expected);
+        expect(parsePath(`${Word.ins}|${Word.del} > ${Word.r} > ${Word.t}|${Word.delText}`))
+            .toStrictEqual(expected);
+        expect(parsePath(`  ${Word.ins} | ${Word.del} >${Word.r}> ${Word.t}|  ${Word.delText} `))
+            .toStrictEqual(expected);
     });
 
     it('Should error parsing an or selector without multiple node names', () => {
-        expect(() => parsePath(`${Word.t}|`)).toThrowError('Multiple node names must be provided when using or selectors');
+        expect(() => parsePath(`${Word.t}|`)).toThrowError(Invalid.or.requiresNodeNames);
     });
 
-    it('Should error parsing multiple node names used in combination with another selector other than the direct child node selector', () => {
-        expect(() => parsePath('#id|rsid')).toThrowError('\'#\' selectors must not be used in combination with multiple node names');
-        expect(() => parsePath('[hidden]|[required]')).toThrowError('A node name provided to an or selector must not include any reserved characters \'#>[]=""()\'');
-        expect(() => parsePath(`${Word.p}(1)|${Word.p}(3)`)).toThrowError('A node name provided to an or selector must not include any reserved characters \'#>[]=""()\'');
+    it('Should error parsing multiple node names used in combination with another selector', () => {
+        expect(() => parsePath('#id|rsid')).toThrowError(Invalid.or.includesId);
+        expect(() => parsePath('[hidden]|[required]')).toThrowError(Invalid.or.nodeName);
+        expect(() => parsePath(`${Word.p}(1)|${Word.p}(3)`)).toThrowError(Invalid.or.nodeName);
     });
 
     it('Should parse multiple selectors', () => {
         const expected = [
-            { nodeName: 'paragraph-6', isDirectChild: false, index: undefined, isId: true, attributeName: undefined, attributeValue: undefined },
-            { nodeName: Word.r, isDirectChild: true, index: 1, isId: false, attributeName: undefined, attributeValue: undefined },
-            { nodeName: Word.t, isDirectChild: false, index: undefined, isId: false, attributeName: Word.space, attributeValue: Word.preserve },
+            {
+                isId: true, isDirectChild: false,
+                nodeName: 'paragraph-6',
+                attributeName: undefined, attributeValue: undefined,
+                index: undefined,
+            },
+            {
+                isId: false, isDirectChild: true,
+                nodeName: Word.r,
+                attributeName: undefined, attributeValue: undefined,
+                index: 1,
+            },
+            {
+                isId: false, isDirectChild: false,
+                nodeName: Word.t,
+                attributeName: Word.space, attributeValue: Word.preserve,
+                index: undefined,
+            },
         ];
-        expect(parsePath(`#paragraph-6 > ${Word.r}(1) ${Word.t}[${Word.space}="${Word.preserve}"]`)).toStrictEqual(expected);
-        expect(parsePath(`  #paragraph-6 >${Word.r} (1)${Word.t}[${Word.space}="${Word.preserve}"] `)).toStrictEqual(expected);
+
+        const path =
+            `#paragraph-6 > ${Word.r}(1) ${Word.t}[${Word.space}="${Word.preserve}"]`;
+        const pathWithWhiteSpaces =
+            `  #paragraph-6 >${Word.r} (1)${Word.t}[${Word.space}="${Word.preserve}"] `;
+
+        expect(parsePath(path))
+            .toStrictEqual(expected);
+        expect(parsePath(pathWithWhiteSpaces))
+            .toStrictEqual(expected);
     });
 
     it('Should error parsing any reserved characters', () => {
-        expect(() => parsePath('[')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
-        expect(() => parsePath(']')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
-        expect(() => parsePath('=')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
-        expect(() => parsePath('"')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
-        expect(() => parsePath('(')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
-        expect(() => parsePath(')')).toThrowError('A node name must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath('[')).toThrowError(Invalid.nodeName);
+        expect(() => parsePath(']')).toThrowError(Invalid.nodeName);
+        expect(() => parsePath('=')).toThrowError(Invalid.nodeName);
+        expect(() => parsePath('"')).toThrowError(Invalid.nodeName);
+        expect(() => parsePath('(')).toThrowError(Invalid.nodeName);
+        expect(() => parsePath(')')).toThrowError(Invalid.nodeName);
 
-        expect(() => parsePath('[>]')).toThrowError('An attribute must not include any reserved characters \'#>[]=""()\'');
-        expect(() => parsePath('["]')).toThrowError('An attribute must not include any reserved characters \'#>[]=""()\'');
+        expect(() => parsePath('[>]')).toThrowError(Invalid.attribute);
+        expect(() => parsePath('["]')).toThrowError(Invalid.attribute);
     });
 });
 
@@ -266,7 +367,8 @@ describe('Getting and manipulating nodes', () => {
                     ' right before',
                     ' and ',
                 ];
-                const actual = getNodesByPath(xmlDocument, `${Word.ins}|${Word.del} > ${Word.r} > ${Word.t}|${Word.delText}`)
+                const path = `${Word.ins}|${Word.del} > ${Word.r} > ${Word.t}|${Word.delText}`;
+                const actual = getNodesByPath(xmlDocument, path)
                     .map(t => t.textContent);
                 expect(actual).toStrictEqual(expected);
             });
@@ -278,7 +380,8 @@ describe('Getting and manipulating nodes', () => {
                     'Fourth',
                     ' and fifth',
                 ];
-                const actual = getNodesByPath(xmlDocument, `${Word.p} > ${Word.r} ${Word.t}`).map(t => t.textContent);
+                const actual = getNodesByPath(xmlDocument, `${Word.p} > ${Word.r} ${Word.t}`)
+                    .map(t => t.textContent);
                 expect(actual).toStrictEqual(expected);
             });
 
@@ -294,7 +397,8 @@ describe('Getting and manipulating nodes', () => {
                 const expected = [
                     'paragraph-6',
                 ];
-                const actual = getNodesByPath(xmlDocument, `[${Word.paraId}="707BD5C8"]`).map(t => t.getAttribute('id'));
+                const actual = getNodesByPath(xmlDocument, `[${Word.paraId}="707BD5C8"]`)
+                    .map(t => t.getAttribute('id'));
                 expect(actual).toStrictEqual(expected);
             });
 
@@ -305,7 +409,8 @@ describe('Getting and manipulating nodes', () => {
                     'Fourth',
                     ' and fifth',
                 ];
-                const actual = get(`${Word.p} > ${Word.r} ${Word.t}`).all().from(xmlDocument).map(t => t.textContent);
+                const actual = get(`${Word.p} > ${Word.r} ${Word.t}`).all().from(xmlDocument)
+                    .map(t => t.textContent);
                 expect(actual).toStrictEqual(expected);
             });
         });
@@ -325,7 +430,8 @@ describe('Getting and manipulating nodes', () => {
 
             it('Should error using an id selector from a node other than a document node', () => {
                 const body = getNodeByPath(xmlDocument, Word.body);
-                expect(() => getNodeByPath(body, '#paragraph-6')).toThrowError('\'#\' selectors must be used from a document node');
+                expect(() => getNodeByPath(body, '#paragraph-6'))
+                    .toThrowError(Invalid.id.notDocumentNode);
             });
 
             it('Should get the node matching the attribute', () => {
@@ -423,9 +529,12 @@ describe('Getting and manipulating nodes', () => {
                     }) ],
                 });
 
-                expect(wDel.nodeName).toEqual(Word.del);
-                expect(getNodeByPath(wDel, Word.delText).getAttribute(Word.space)).toEqual(Word.preserve);
-                expect(getNodeByPath(wDel, Word.delText).textContent).toEqual(expected);
+                expect(wDel.nodeName)
+                    .toEqual(Word.del);
+                expect(getNodeByPath(wDel, Word.delText).getAttribute(Word.space))
+                    .toEqual(Word.preserve);
+                expect(getNodeByPath(wDel, Word.delText).textContent)
+                    .toEqual(expected);
             });
 
             it('Should support syntactic sugar', () => {
@@ -448,9 +557,12 @@ describe('Getting and manipulating nodes', () => {
                     ])
                     .for(xmlDocument);
 
-                expect(wDel.nodeName).toEqual(Word.del);
-                expect(getNodeByPath(wDel, Word.delText).getAttribute(Word.space)).toEqual(Word.preserve);
-                expect(getNodeByPath(wDel, Word.delText).textContent).toEqual(expected);
+                expect(wDel.nodeName)
+                    .toEqual(Word.del);
+                expect(getNodeByPath(wDel, Word.delText).getAttribute(Word.space))
+                    .toEqual(Word.preserve);
+                expect(getNodeByPath(wDel, Word.delText).textContent)
+                    .toEqual(expected);
             });
         });
 
