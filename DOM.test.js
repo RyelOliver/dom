@@ -16,7 +16,7 @@ const {
     create,
     insert,
     remove,
-} = require('./index');
+} = require('./DOM');
 
 const Word = {
     // Nodes

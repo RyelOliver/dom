@@ -2,7 +2,7 @@
   "name": "dom",
   "version": "1.0.0",
   "description": "An extension to `xmldom`'s JavaScript implementation of W3C DOM. `getNodesByPath` and `getNodeByPath` are to be used in a manner similar to `querySelectorAll` and `querySelector`.",
-  "main": "index.js",
+  "main": "DOM.js",
   "scripts": {
     "test": "jest --watch"
   },
