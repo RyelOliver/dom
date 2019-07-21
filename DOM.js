@@ -213,7 +213,7 @@ function _getNodesBySelectors(node, selectors) {
     return nodes;
 }
 
-function getNodesByPath(node, path) {
+function getAllNodesByPath(node, path) {
     const selectors = parsePath(path);
 
     if (selectors.length <= 1) {
@@ -229,11 +229,11 @@ function getNodesByPath(node, path) {
 }
 
 function getNodeByPath(node, path) {
-    const nodes = getNodesByPath(node, path);
+    const nodes = getAllNodesByPath(node, path);
     return nodes.length > 0 ? nodes[0] : undefined;
 }
 
-function _getAdjacentNodeWithNodeName(node, nodeName, direction) {
+function _getAdjacentNodeByNodeName(node, nodeName, direction) {
     let adjacentNode = node;
     while (adjacentNode[`${direction}Sibling`]) {
         adjacentNode = adjacentNode[`${direction}Sibling`];
@@ -251,18 +251,18 @@ function _getAdjacentNodeWithNodeName(node, nodeName, direction) {
     if (!node.parentNode)
         return undefined;
 
-    return _getAdjacentNodeWithNodeName(node.parentNode, nodeName, direction);
+    return _getAdjacentNodeByNodeName(node.parentNode, nodeName, direction);
 }
 
-function getPreviousNodeWithNodeName(node, nodeName) {
-    return _getAdjacentNodeWithNodeName(node, nodeName, Direction.previous);
+function getPreviousNodeByNodeName(node, nodeName) {
+    return _getAdjacentNodeByNodeName(node, nodeName, Direction.previous);
 }
 
-function getNextNodeWithNodeName(node, nodeName) {
-    return _getAdjacentNodeWithNodeName(node, nodeName, Direction.next);
+function getNextNodeByNodeName(node, nodeName) {
+    return _getAdjacentNodeByNodeName(node, nodeName, Direction.next);
 }
 
-function _getAdjacentNodesWithNodeName(node, nodeName, direction, untilNode) {
+function _getAllAdjacentNodesByNodeName(node, nodeName, direction, untilNode) {
     if (node === untilNode)
         return [ node ];
 
@@ -270,7 +270,7 @@ function _getAdjacentNodesWithNodeName(node, nodeName, direction, untilNode) {
     let adjacentNode = node;
 
     while (adjacentNode && adjacentNode !== untilNode) {
-        adjacentNode = _getAdjacentNodeWithNodeName(adjacentNode, nodeName, direction);
+        adjacentNode = _getAdjacentNodeByNodeName(adjacentNode, nodeName, direction);
         if (adjacentNode)
             adjacentNodes.push(adjacentNode);
     }
@@ -278,12 +278,12 @@ function _getAdjacentNodesWithNodeName(node, nodeName, direction, untilNode) {
     return adjacentNodes;
 }
 
-function getPreviousNodesWithNodeName(node, nodeName, untilNode) {
-    return _getAdjacentNodesWithNodeName(node, nodeName, Direction.previous, untilNode);
+function getAllPreviousNodeByNodeName(node, nodeName, untilNode) {
+    return _getAllAdjacentNodesByNodeName(node, nodeName, Direction.previous, untilNode);
 }
 
-function getNextNodesWithNodeName(node, nodeName, untilNode) {
-    return _getAdjacentNodesWithNodeName(node, nodeName, Direction.next, untilNode);
+function getAllNextNodeByNodeName(node, nodeName, untilNode) {
+    return _getAllAdjacentNodesByNodeName(node, nodeName, Direction.next, untilNode);
 }
 
 function setNodeAttributes(node, attributes) {
@@ -344,19 +344,19 @@ function get(path) {
         },
         from: function(node) {
             if (all && previous)
-                return getPreviousNodesWithNodeName(node, path, untilNode);
+                return getAllPreviousNodeByNodeName(node, path, untilNode);
 
             if (all && next)
-                return getNextNodesWithNodeName(node, path, untilNode);
+                return getAllNextNodeByNodeName(node, path, untilNode);
 
             if (previous)
-                return getPreviousNodeWithNodeName(node, path);
+                return getPreviousNodeByNodeName(node, path);
 
             if (next)
-                return getNextNodeWithNodeName(node, path);
+                return getNextNodeByNodeName(node, path);
 
             if (all)
-                return getNodesByPath(node, path);
+                return getAllNodesByPath(node, path);
 
             return getNodeByPath(node, path);
         },
@@ -365,7 +365,7 @@ function get(path) {
 
 function set(attributes) {
     return {
-        to: function(node) {
+        on: function(node) {
             return setNodeAttributes(node, attributes);
         },
     };
@@ -425,12 +425,12 @@ module.exports = {
     Invalid,
     parsePath,
     getNodesByNodeNames,
-    getNodesByPath,
+    getAllNodesByPath,
     getNodeByPath,
-    getPreviousNodeWithNodeName,
-    getNextNodeWithNodeName,
-    getPreviousNodesWithNodeName,
-    getNextNodesWithNodeName,
+    getPreviousNodeByNodeName,
+    getNextNodeByNodeName,
+    getAllPreviousNodeByNodeName,
+    getAllNextNodeByNodeName,
     setNodeAttributes,
     appendChildNodes,
     createNode,

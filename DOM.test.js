@@ -2,12 +2,12 @@ const { DOMParser } = require('xmldom');
 const {
     Invalid,
     parsePath,
-    getNodesByPath,
+    getAllNodesByPath,
     getNodeByPath,
-    getPreviousNodeWithNodeName,
-    getNextNodeWithNodeName,
-    getPreviousNodesWithNodeName,
-    getNextNodesWithNodeName,
+    getPreviousNodeByNodeName,
+    getNextNodeByNodeName,
+    getAllPreviousNodeByNodeName,
+    getAllNextNodeByNodeName,
     setNodeAttributes,
     appendChildNodes,
     createNode,
@@ -361,7 +361,7 @@ describe('Getting and manipulating nodes', () => {
                     'Fourth',
                     ' and fifth',
                 ];
-                const actual = getNodesByPath(xmlDocument, Word.t).map(t => t.textContent);
+                const actual = getAllNodesByPath(xmlDocument, Word.t).map(t => t.textContent);
                 expect(actual).toStrictEqual(expected);
             });
 
@@ -372,7 +372,7 @@ describe('Getting and manipulating nodes', () => {
                     ' and ',
                 ];
                 const path = `${Word.ins}|${Word.del} > ${Word.r} > ${Word.t}|${Word.delText}`;
-                const actual = getNodesByPath(xmlDocument, path)
+                const actual = getAllNodesByPath(xmlDocument, path)
                     .map(t => t.textContent);
                 expect(actual).toStrictEqual(expected);
             });
@@ -384,7 +384,7 @@ describe('Getting and manipulating nodes', () => {
                     'Fourth',
                     ' and fifth',
                 ];
-                const actual = getNodesByPath(xmlDocument, `${Word.p} > ${Word.r} ${Word.t}`)
+                const actual = getAllNodesByPath(xmlDocument, `${Word.p} > ${Word.r} ${Word.t}`)
                     .map(t => t.textContent);
                 expect(actual).toStrictEqual(expected);
             });
@@ -393,7 +393,7 @@ describe('Getting and manipulating nodes', () => {
                 const expected = [
                     'Third',
                 ];
-                const actual = getNodesByPath(xmlDocument, '[hidden]').map(t => t.textContent);
+                const actual = getAllNodesByPath(xmlDocument, '[hidden]').map(t => t.textContent);
                 expect(actual).toStrictEqual(expected);
             });
 
@@ -401,7 +401,7 @@ describe('Getting and manipulating nodes', () => {
                 const expected = [
                     'paragraph-6',
                 ];
-                const actual = getNodesByPath(xmlDocument, `[${Word.paraId}="707BD5C8"]`)
+                const actual = getAllNodesByPath(xmlDocument, `[${Word.paraId}="707BD5C8"]`)
                     .map(t => t.getAttribute('id'));
                 expect(actual).toStrictEqual(expected);
             });
@@ -459,7 +459,7 @@ describe('Getting and manipulating nodes', () => {
                     const path = `${Word.ins} > ${Word.r} > ${Word.t}`;
                     const fromNode = getNodeByPath(xmlDocument, path);
 
-                    const actual = getPreviousNodeWithNodeName(fromNode, Word.t).textContent;
+                    const actual = getPreviousNodeByNodeName(fromNode, Word.t).textContent;
                     expect(actual).toStrictEqual(expected);
                 });
 
@@ -478,7 +478,7 @@ describe('Getting and manipulating nodes', () => {
                     const path = `${Word.ins} > ${Word.r} > ${Word.t}`;
                     const fromNode = getNodeByPath(xmlDocument, path);
 
-                    const actual = getNextNodeWithNodeName(fromNode, Word.t).textContent;
+                    const actual = getNextNodeByNodeName(fromNode, Word.t).textContent;
                     expect(actual).toStrictEqual(expected);
                 });
 
@@ -500,7 +500,7 @@ describe('Getting and manipulating nodes', () => {
                     const path = `${Word.ins} > ${Word.r} > ${Word.t}`;
                     const fromNode = getNodeByPath(xmlDocument, path);
 
-                    const actual = getPreviousNodesWithNodeName(fromNode, Word.t)
+                    const actual = getAllPreviousNodeByNodeName(fromNode, Word.t)
                         .map(wT => wT.textContent);
                     expect(actual).toStrictEqual(expected);
                 });
@@ -528,7 +528,7 @@ describe('Getting and manipulating nodes', () => {
                     const path = `${Word.ins} > ${Word.r} > ${Word.t}`;
                     const fromNode = getNodeByPath(xmlDocument, path);
 
-                    const actual = getNextNodesWithNodeName(fromNode, Word.t)
+                    const actual = getAllNextNodeByNodeName(fromNode, Word.t)
                         .map(wT => wT.textContent);
                     expect(actual).toStrictEqual(expected);
                 });
@@ -557,7 +557,7 @@ describe('Getting and manipulating nodes', () => {
                     const fromNode = getNodeByPath(xmlDocument, fromPath);
                     const untilNode = getNodeByPath(xmlDocument, untilPath);
 
-                    const actual = getPreviousNodesWithNodeName(fromNode, Word.t, untilNode)
+                    const actual = getAllPreviousNodeByNodeName(fromNode, Word.t, untilNode)
                         .map(wT => wT.textContent);
                     expect(actual).toStrictEqual(expected);
                 });
@@ -590,7 +590,7 @@ describe('Getting and manipulating nodes', () => {
                     const fromNode = getNodeByPath(xmlDocument, fromPath);
                     const untilNode = getNodeByPath(xmlDocument, untilPath);
 
-                    const actual = getNextNodesWithNodeName(fromNode, Word.t, untilNode)
+                    const actual = getAllNextNodeByNodeName(fromNode, Word.t, untilNode)
                         .map(wT => wT.textContent);
                     expect(actual).toStrictEqual(expected);
                 });
@@ -640,7 +640,7 @@ describe('Getting and manipulating nodes', () => {
                 const wR = get(Word.r).from(xmlDocument);
                 expect(wR.getAttribute(Word.rsidR)).toBeFalsy();
 
-                set({ [Word.rsidR]: '000000' }).to(wR);
+                set({ [Word.rsidR]: '000000' }).on(wR);
 
                 expect(wR.getAttribute(Word.rsidR)).toEqual('000000');
             });
@@ -653,7 +653,7 @@ describe('Getting and manipulating nodes', () => {
 
                 appendChildNodes(wIns, [ wR ]);
 
-                const actual = getNodesByPath(xmlDocument, `${Word.p}(1) > ${Word.r} ${Word.t}`)
+                const actual = getAllNodesByPath(xmlDocument, `${Word.p}(1) > ${Word.r} ${Word.t}`)
                     .map(wT => wT.textContent);
 
                 expect(actual).toStrictEqual([
@@ -748,7 +748,7 @@ describe('Getting and manipulating nodes', () => {
 
                 insertAfterNode(wRFirst, wR);
 
-                const actual = getNodesByPath(xmlDocument, `${Word.p}(1) ${Word.r} ${Word.t}`)
+                const actual = getAllNodesByPath(xmlDocument, `${Word.p}(1) ${Word.r} ${Word.t}`)
                     .map(wT => wT.textContent);
 
                 expect(actual).toStrictEqual([
@@ -774,7 +774,7 @@ describe('Getting and manipulating nodes', () => {
 
                 insertAfterNode(wIns, wR);
 
-                const actual = getNodesByPath(xmlDocument, `${Word.p}(1) ${Word.r} ${Word.t}`)
+                const actual = getAllNodesByPath(xmlDocument, `${Word.p}(1) ${Word.r} ${Word.t}`)
                     .map(wT => wT.textContent);
 
                 expect(actual).toStrictEqual([
@@ -800,7 +800,7 @@ describe('Getting and manipulating nodes', () => {
 
                 insertBeforeNode(wIns, wR);
 
-                const actual = getNodesByPath(xmlDocument, `${Word.p}(1) ${Word.r} ${Word.t}`)
+                const actual = getAllNodesByPath(xmlDocument, `${Word.p}(1) ${Word.r} ${Word.t}`)
                     .map(wT => wT.textContent);
 
                 expect(actual).toStrictEqual([
@@ -840,13 +840,13 @@ describe('Getting and manipulating nodes', () => {
 
         describe('Removing nodes', () => {
             it('Should remove a node', () => {
-                const wInssBefore = getNodesByPath(xmlDocument, Word.ins);
+                const wInssBefore = getAllNodesByPath(xmlDocument, Word.ins);
                 expect(wInssBefore).toHaveLength(2);
 
                 const wIns = getNodeByPath(xmlDocument, Word.ins);
                 removeNode(wIns);
 
-                const wInssAfter = getNodesByPath(xmlDocument, Word.ins);
+                const wInssAfter = getAllNodesByPath(xmlDocument, Word.ins);
                 expect(wInssAfter).toHaveLength(1);
             });
 

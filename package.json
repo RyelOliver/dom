@@ -1,7 +1,7 @@
 {
   "name": "dom",
   "version": "1.0.0",
-  "description": "An extension to `xmldom`'s JavaScript implementation of W3C DOM. `getNodesByPath` and `getNodeByPath` are to be used in a manner similar to `querySelectorAll` and `querySelector`.",
+  "description": "An extension to `xmldom`'s JavaScript implementation of W3C DOM. Most notably `getAllNodesByPath` and `getNodeByPath` are to be used in a manner similar to `querySelectorAll` and `querySelector`. Also provides syntactic sugar through a set of chainable functions.",
   "main": "DOM.js",
   "scripts": {
     "test": "jest --watch"
@@ -11,7 +11,12 @@
     "dom",
     "xml",
     "xmldom",
-    "queryselector"
+    "queryselector",
+    "chain",
+    "chainable",
+    "syntax",
+    "synactic",
+    "sugar"
   ],
   "author": "",
   "license": "ISC",
